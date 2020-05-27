@@ -12,22 +12,22 @@ t = range(tspan[1],tspan[2],length=datasize)
 prob = ODEProblem(trueODEfunc,u0,tspan)
 ode_data = Array(solve(prob,Tsit5(),saveat=t))
 
-fastdudt2 = FastChain((x,p) -> x.^3,
-             FastDense(2,50,tanh),
-             FastDense(50,2))
-fast_n_ode = NeuralODE(fastdudt2,tspan,Tsit5(),saveat=t)
+Slowdudt2 = SlowChain((x,p) -> x.^3,
+             SlowDense(2,50,tanh),
+             SlowDense(50,2))
+Slow_n_ode = NeuralODE(Slowdudt2,tspan,Tsit5(),saveat=t)
 
-function fast_predict_n_ode(p)
-  fast_n_ode(u0,p)
+function Slow_predict_n_ode(p)
+  Slow_n_ode(u0,p)
 end
 
-function fast_loss_n_ode(p)
-    pred = fast_predict_n_ode(p)
+function Slow_loss_n_ode(p)
+    pred = Slow_predict_n_ode(p)
     loss = sum(abs2,ode_data .- pred)
     loss,pred
 end
 
-staticdudt2 = FastChain((x,p) -> x.^3,
+staticdudt2 = SlowChain((x,p) -> x.^3,
                         StaticDense(2,50,tanh),
                         StaticDense(50,2))
 static_n_ode = NeuralODE(staticdudt2,tspan,Tsit5(),saveat=t)
@@ -57,18 +57,18 @@ function loss_n_ode(p)
     loss,pred
 end
 
-p = initial_params(fastdudt2)
+p = initial_params(Slowdudt2)
 _p,re = Flux.destructure(dudt2)
-@test fastdudt2(ones(2),_p) ≈ dudt2(ones(2))
+@test Slowdudt2(ones(2),_p) ≈ dudt2(ones(2))
 @test staticdudt2(ones(2),_p) ≈ dudt2(ones(2))
-@test fast_loss_n_ode(p)[1] ≈ loss_n_ode(p)[1]
+@test Slow_loss_n_ode(p)[1] ≈ loss_n_ode(p)[1]
 @test static_loss_n_ode(p)[1] ≈ loss_n_ode(p)[1]
-@test Zygote.gradient((p)->fast_loss_n_ode(p)[1], p)[1] ≈ Zygote.gradient((p)->loss_n_ode(p)[1], p)[1] rtol=1e-3
+@test Zygote.gradient((p)->Slow_loss_n_ode(p)[1], p)[1] ≈ Zygote.gradient((p)->loss_n_ode(p)[1], p)[1] rtol=1e-3
 @test Zygote.gradient((p)->static_loss_n_ode(p)[1], p)[1] ≈ Zygote.gradient((p)->loss_n_ode(p)[1], p)[1] rtol=1e-3
 
 #=
 using BenchmarkTools
 @btime Zygote.gradient((p)->static_loss_n_ode(p)[1], p)
-@btime Zygote.gradient((p)->fast_loss_n_ode(p)[1], p)
+@btime Zygote.gradient((p)->Slow_loss_n_ode(p)[1], p)
 @btime Zygote.gradient((p)->loss_n_ode(p)[1], p)
 =#

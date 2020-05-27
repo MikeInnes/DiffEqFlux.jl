@@ -5,7 +5,7 @@ du0 = Float32[0.; 0.]
 tspan = (0.0f0, 1.0f0)
 t = range(tspan[1], tspan[2], length=20)
 
-model = FastChain(FastDense(2, 50, tanh), FastDense(50, 2))
+model = SlowChain(SlowDense(2, 50, tanh), SlowDense(50, 2))
 p = initial_params(model)
 ff(du,u,p,t) = model(u,p)
 prob = SecondOrderODEProblem{false}(ff, du0, u0, tspan, p)

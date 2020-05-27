@@ -4,26 +4,26 @@ Flux.trainable(m::NeuralDELayer) = (m.p,)
 
 """
 Constructs a continuous-time recurrant neural network, also known as a neural
-ordinary differential equation (neural ODE), with a fast gradient calculation
+ordinary differential equation (neural ODE), with a Slow gradient calculation
 via adjoints [1]. At a high level this corresponds to solving the forward
 differential equation, using a second differential equation that propagates the
 derivatives of the loss backwards in time.
 
 ```julia
 NeuralODE(model,tspan,alg=nothing,args...;kwargs...)
-NeuralODE(model::FastChain,tspan,alg=nothing,args...;
+NeuralODE(model::SlowChain,tspan,alg=nothing,args...;
           sensealg=InterpolatingAdjoint(autojacvec=DiffEqSensitivity.ReverseDiffVJP(true)),
           kwargs...)
 ```
 
 Arguments:
 
-- `model`: A Chain or FastChain neural network that defines the ̇x.
+- `model`: A Chain or SlowChain neural network that defines the ̇x.
 - `tspan`: The timespan to be solved on.
 - `alg`: The algorithm used to solve the ODE. Defaults to `nothing`, i.e. the
   default algorithm from DifferentialEquations.jl.
 - `sensealg`: The choice of differentiation algorthm used in the backpropogation.
-  Defaults to an adjoint method, and with `FastChain` it defaults to utilizing
+  Defaults to an adjoint method, and with `SlowChain` it defaults to utilizing
   a tape-compiled ReverseDiff vector-Jacobian product for extra efficiency. Seee
   the [Local Sensitivity Analysis](https://docs.sciml.ai/dev/analysis/sensitivity/)
   documentation for more details.
@@ -54,7 +54,7 @@ struct NeuralODE{M,P,RE,T,S,A,K} <: NeuralDELayer
             model,p,re,tspan,solver,args,kwargs)
     end
 
-    function NeuralODE(model::FastChain,tspan,solver=nothing,args...;p = initial_params(model),kwargs...)
+    function NeuralODE(model::SlowChain,tspan,solver=nothing,args...;p = initial_params(model),kwargs...)
         re = nothing
         new{typeof(model),typeof(p),typeof(re),
             typeof(tspan),typeof(solver),typeof(args),typeof(kwargs)}(
@@ -70,7 +70,7 @@ function (n::NeuralODE)(x,p=n.p)
     concrete_solve(prob,n.solver,x,p,n.args...;sense=sense,n.kwargs...)
 end
 
-function (n::NeuralODE{M})(x,p=n.p) where {M<:FastChain}
+function (n::NeuralODE{M})(x,p=n.p) where {M<:SlowChain}
     dudt_(u,p,t) = n.model(u,p)
     ff = ODEFunction{false}(dudt_,tgrad=basic_tgrad)
     prob = ODEProblem{false}(ff,x,n.tspan,p)
@@ -86,14 +86,14 @@ Constructs a neural stochastic differential equation (neural SDE) with diagonal 
 ```julia
 NeuralDSDE(model1,model2,tspan,alg=nothing,args...;
            sensealg=TrackerAdjoint(),kwargs...)
-NeuralDSDE(model1::FastChain,model2::FastChain,tspan,alg=nothing,args...;
+NeuralDSDE(model1::SlowChain,model2::SlowChain,tspan,alg=nothing,args...;
            sensealg=TrackerAdjoint(),kwargs...)
 ```
 
 Arguments:
 
-- `model1`: A Chain or FastChain neural network that defines the drift function.
-- `model2`: A Chain or FastChain neural network that defines the diffusion function.
+- `model1`: A Chain or SlowChain neural network that defines the drift function.
+- `model2`: A Chain or SlowChain neural network that defines the diffusion function.
   Should output a vector of the same size as the input.
 - `tspan`: The timespan to be solved on.
 - `alg`: The algorithm used to solve the ODE. Defaults to `nothing`, i.e. the
@@ -127,7 +127,7 @@ struct NeuralDSDE{M,P,RE,M2,RE2,T,S,A,K} <: NeuralDELayer
             length(p1),model1,re1,model2,re2,tspan,solver,args,kwargs)
     end
 
-    function NeuralDSDE(model1::FastChain,model2::FastChain,tspan,solver=nothing,args...;
+    function NeuralDSDE(model1::SlowChain,model2::SlowChain,tspan,solver=nothing,args...;
                         p1 = initial_params(model1),
                         p = [p1;initial_params(model2)], kwargs...)
         re1 = nothing
@@ -146,7 +146,7 @@ function (n::NeuralDSDE)(x,p=n.p)
     concrete_solve(prob,n.solver,x,p,n.args...;sensealg=TrackerAdjoint(),n.kwargs...)
 end
 
-function (n::NeuralDSDE{M})(x,p=n.p) where {M<:FastChain}
+function (n::NeuralDSDE{M})(x,p=n.p) where {M<:SlowChain}
     dudt_(u,p,t) = n.model1(u,p[1:n.len])
     g(u,p,t) = n.model2(u,p[(n.len+1):end])
     ff = SDEFunction{false}(dudt_,g,tgrad=basic_tgrad)
@@ -160,14 +160,14 @@ Constructs a neural stochastic differential equation (neural SDE).
 ```julia
 NeuralSDE(model1,model2,tspan,nbrown,alg=nothing,args...;
           sensealg=TrackerAdjoint(),kwargs...)
-NeuralSDE(model1::FastChain,model2::FastChain,tspan,nbrown,alg=nothing,args...;
+NeuralSDE(model1::SlowChain,model2::SlowChain,tspan,nbrown,alg=nothing,args...;
           sensealg=TrackerAdjoint(),kwargs...)
 ```
 
 Arguments:
 
-- `model1`: A Chain or FastChain neural network that defines the drift function.
-- `model2`: A Chain or FastChain neural network that defines the diffusion function.
+- `model1`: A Chain or SlowChain neural network that defines the drift function.
+- `model2`: A Chain or SlowChain neural network that defines the diffusion function.
   Should output a matrix that is nbrown x size(x,1).
 - `tspan`: The timespan to be solved on.
 - `nbrown`: The number of Brownian processes
@@ -203,7 +203,7 @@ struct NeuralSDE{P,M,RE,M2,RE2,T,S,A,K} <: NeuralDELayer
             p,length(p1),model1,re1,model2,re2,tspan,nbrown,solver,args,kwargs)
     end
 
-    function NeuralSDE(model1::FastChain,model2::FastChain,tspan,nbrown,solver=nothing,args...;
+    function NeuralSDE(model1::SlowChain,model2::SlowChain,tspan,nbrown,solver=nothing,args...;
                        p1 = initial_params(model1),
                        p = [p1;initial_params(model2)], kwargs...)
         re1 = nothing
@@ -222,7 +222,7 @@ function (n::NeuralSDE)(x,p=n.p)
     concrete_solve(prob,n.solver,x,p,n.args...;sensealg=TrackerAdjoint(),n.kwargs...)
 end
 
-function (n::NeuralSDE{P,M})(x,p=n.p) where {P,M<:FastChain}
+function (n::NeuralSDE{P,M})(x,p=n.p) where {P,M<:SlowChain}
     dudt_(u,p,t) = n.model1(u,p[1:n.len])
     g(u,p,t) = n.model2(u,p[(n.len+1):end])
     ff = SDEFunction{false}(dudt_,g,tgrad=basic_tgrad)
@@ -237,13 +237,13 @@ delays.
 ```julia
 NeuralCDDE(model,tspan,hist,lags,alg=nothing,args...;
           sensealg=TrackerAdjoint(),kwargs...)
-NeuralCDDE(model::FastChain,tspan,hist,lags,alg=nothing,args...;
+NeuralCDDE(model::SlowChain,tspan,hist,lags,alg=nothing,args...;
           sensealg=TrackerAdjoint(),kwargs...)
 ```
 
 Arguments:
 
-- `model`: A Chain or FastChain neural network that defines the derivative function.
+- `model`: A Chain or SlowChain neural network that defines the derivative function.
   Should take an input of size `[x;x(t-lag_1);...;x(t-lag_n)]` and produce and
   output shaped like `x`.
 - `tspan`: The timespan to be solved on.
@@ -280,7 +280,7 @@ struct NeuralCDDE{P,M,RE,H,L,T,S,A,K} <: NeuralDELayer
             re,hist,lags,tspan,solver,args,kwargs)
     end
 
-    function NeuralCDDE(model::FastChain,tspan,hist,lags,solver=nothing,args...;p = initial_params(model),kwargs...)
+    function NeuralCDDE(model::SlowChain,tspan,hist,lags,solver=nothing,args...;p = initial_params(model),kwargs...)
         re = nothing
         new{typeof(p),typeof(model),typeof(re),typeof(hist),typeof(lags),
             typeof(tspan),typeof(solver),typeof(args),typeof(kwargs)}(p,model,
@@ -298,7 +298,7 @@ function (n::NeuralCDDE)(x,p=n.p)
     concrete_solve(prob,n.solver,x,p,n.args...;sensealg=TrackerAdjoint(),n.kwargs...)
 end
 
-function (n::NeuralCDDE{P,M})(x,p=n.p) where {P,M<:FastChain}
+function (n::NeuralCDDE{P,M})(x,p=n.p) where {P,M<:SlowChain}
     function dudt_(u,h,p,t)
         _u = vcat(u,(h(p,t-lag) for lag in n.lags)...)
         n.model(_u,p)
@@ -314,13 +314,13 @@ Constructs a neural differential-algebraic equation (neural DAE).
 ```julia
 NeuralDAE(model,constraints_model,tspan,alg=nothing,args...;
           sensealg=TrackerAdjoint(),kwargs...)
-NeuralDAE(model::FastChain,constraints_model,tspan,alg=nothing,args...;
+NeuralDAE(model::SlowChain,constraints_model,tspan,alg=nothing,args...;
           sensealg=TrackerAdjoint(),kwargs...)
 ```
 
 Arguments:
 
-- `model`: A Chain or FastChain neural network that defines the derivative function.
+- `model`: A Chain or SlowChain neural network that defines the derivative function.
   Should take an input of size `x` and produce the residual of `f(dx,x,t)`
   for only the differential variables.
 - `constraints_model`: A function `constraints_model(u,p,t)` for the fixed
@@ -382,7 +382,7 @@ end
 """
 Constructs a physically-constrained continuous-time recurrant neural network,
 also known as a neural differential-algebraic equation (neural DAE), with a
-mass matrix and a fast gradient calculation via adjoints [1]. The mass matrix
+mass matrix and a Slow gradient calculation via adjoints [1]. The mass matrix
 formulation is:
 
 ```math
@@ -394,14 +394,14 @@ the constraint equations.
 
 ```julia
 NeuralODEMM(model,constraints_model,tspan,alg=nothing,args...;kwargs...)
-NeuralODEMM(model::FastChain,tspan,alg=nothing,args...;
+NeuralODEMM(model::SlowChain,tspan,alg=nothing,args...;
           sensealg=InterpolatingAdjoint(autojacvec=DiffEqSensitivity.ReverseDiffVJP(true)),
           kwargs...)
 ```
 
 Arguments:
 
-- `model`: A Chain or FastChain neural network that defines the ̇`f(u,p,t)`
+- `model`: A Chain or SlowChain neural network that defines the ̇`f(u,p,t)`
 - `constraints_model`: A function `constraints_model(u,p,t)` for the fixed
   constaints to impose on the algebraic equations.
 - `tspan`: The timespan to be solved on.
@@ -410,7 +410,7 @@ Arguments:
   implicit ODE solver compatible with singular mass matrices. Consult the
   [DAE solvers](https://docs.sciml.ai/latest/solvers/dae_solve/) documentation for more details.
 - `sensealg`: The choice of differentiation algorthm used in the backpropogation.
-  Defaults to an adjoint method, and with `FastChain` it defaults to utilizing
+  Defaults to an adjoint method, and with `SlowChain` it defaults to utilizing
   a tape-compiled ReverseDiff vector-Jacobian product for extra efficiency. Seee
   the [Local Sensitivity Analysis](https://docs.sciml.ai/dev/analysis/sensitivity/)
   documentation for more details.
@@ -442,7 +442,7 @@ struct NeuralODEMM{M,M2,P,RE,T,S,MM,A,K} <: NeuralDELayer
             model,constraints_model,p,re,tspan,solver,mass_matrix,args,kwargs)
     end
 
-    function NeuralODEMM(model::FastChain,constraints_model,tspan,mass_matrix,solver=nothing,args...;
+    function NeuralODEMM(model::SlowChain,constraints_model,tspan,mass_matrix,solver=nothing,args...;
                          p = initial_params(model), kwargs...)
         re = nothing
         new{typeof(model),typeof(constraints_model),typeof(p),typeof(re),
@@ -464,7 +464,7 @@ function (n::NeuralODEMM)(x,p=n.p)
     concrete_solve(prob,n.solver,x,p,n.args...;sensealg=sense,n.kwargs...)
 end
 
-function (n::NeuralODEMM{M})(x,p=n.p) where {M<:FastChain}
+function (n::NeuralODEMM{M})(x,p=n.p) where {M<:SlowChain}
     function f(u,p,t)
         nn_out = n.model(u,p)
         alg_out = n.constraints_model(u,p,t)

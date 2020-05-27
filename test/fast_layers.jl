@@ -1,16 +1,16 @@
 using Flux, DiffEqFlux, Test, StaticArrays
 
-fd = FastDense(2,25,tanh)
+fd = SlowDense(2,25,tanh)
 pd = initial_params(fd)
 fd(ones(2),pd)
 
-f1 = FastDense(2,25,tanh)
-f2 = FastDense(25,2,tanh)
+f1 = SlowDense(2,25,tanh)
+f2 = SlowDense(25,2,tanh)
 p1 = initial_params(f1)
 p2 = initial_params(f2)
-@test FastChain(f1,f2)(ones(2),[p1;p2]) == f2(f1(ones(2),p1),p2)
+@test SlowChain(f1,f2)(ones(2),[p1;p2]) == f2(f1(ones(2),p1),p2)
 
-f = FastChain(FastDense(2,25,tanh),FastDense(25,2,tanh))
+f = SlowChain(SlowDense(2,25,tanh),SlowDense(25,2,tanh))
 p = initial_params(f)
 @test f(ones(2),p) == f2(f1(ones(2),p[1:length(p1)]),p[length(p1)+1:end])
 
@@ -24,7 +24,7 @@ fsgrad = Flux.Zygote.gradient((x,p)->sum(fs(x,p)),x,pd)
 @test fdgrad[2] ≈ fsgrad[2]
 
 # Now test vs Zygote
-struct TestDense{F,F2} <: DiffEqFlux.FastLayer
+struct TestDense{F,F2} <: DiffEqFlux.SlowLayer
   out::Int
   in::Int
   σ::F

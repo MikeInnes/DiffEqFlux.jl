@@ -38,7 +38,7 @@ of a local minimum. This looks like:
 ```julia
 using DiffEqFlux, Flux, Optim, OrdinaryDiffEq, Plots, Statistics, DiffEqSensitivity
 tspan = (0.0f0,8.0f0)
-ann = FastChain(FastDense(1,32,tanh), FastDense(32,32,tanh), FastDense(32,1))
+ann = SlowChain(SlowDense(1,32,tanh), SlowDense(32,32,tanh), SlowDense(32,1))
 θ = initial_params(ann)
 function dxdt_(dx,x,p,t)
     x1, x2 = x

@@ -1,7 +1,7 @@
 # Use with Flux.jl
 
 All of the tools of DiffEqFlux.jl can be used with Flux.jl. A lot of the examples
-have been written to use `FastChain` and `sciml_train`, but in all cases this
+have been written to use `SlowChain` and `sciml_train`, but in all cases this
 can be changed to the `Chain` and `Flux.train!` workflow.
 
 ## Using Flux `Chain` neural networks with Flux.train!
@@ -61,7 +61,7 @@ res1 = Flux.train!(loss_n_ode, Flux.params(u0,p), data, ADAM(0.05), cb = cb)
 
 ## Using Flux `Chain` neural networks with sciml_train
 
-While for simple neural networks we recommend using `FastChain`-based neural
+While for simple neural networks we recommend using `SlowChain`-based neural
 networks for speed and simplicity, Flux neural networks can be used with
 `sciml_train` by utilizing the `Flux.destructure` function. In this case, if
 `dudt` is a Flux chain, then:

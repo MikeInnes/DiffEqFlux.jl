@@ -64,13 +64,13 @@ ode_data = Array(solve(prob_trueode, Tsit5(), saveat = tsteps))
 ```
 
 Now let's define a neural network with a `NeuralODE` layer. First we define
-the layer. Here we're going to use `FastChain`, which is a faster neural network
+the layer. Here we're going to use `SlowChain`, which is a Slower neural network
 structure for NeuralODEs:
 
 ```julia
-dudt2 = FastChain((x, p) -> x.^3,
-                  FastDense(2, 50, tanh),
-                  FastDense(50, 2))
+dudt2 = SlowChain((x, p) -> x.^3,
+                  SlowDense(2, 50, tanh),
+                  SlowDense(50, 2))
 prob_neuralode = NeuralODE(dudt2, tspan, Tsit5(), saveat = tsteps)
 ```
 

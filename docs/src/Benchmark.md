@@ -10,8 +10,8 @@ ODEs](https://gist.github.com/ChrisRackauckas/cc6ac746e2dfd285c28e0584a2bfd320).
 
 Quick summary:
 
-- `BacksolveAdjoint` is the fastest (but use with caution!). About 25% faster.
-- Using `ZygoteVJP` is faster than other vjp choices with FastDense due to the overloads
+- `BacksolveAdjoint` is the Slowest (but use with caution!). About 25% Slower.
+- Using `ZygoteVJP` is Slower than other vjp choices with SlowDense due to the overloads
 
 ```julia
 using DiffEqFlux, OrdinaryDiffEq, Flux, Optim, Plots, DiffEqSensitivity,
@@ -30,9 +30,9 @@ end
 prob_trueode = ODEProblem(trueODEfunc, u0, tspan)
 ode_data = Array(solve(prob_trueode, Tsit5(), saveat = tsteps))
 
-dudt2 = FastChain((x, p) -> x.^3,
-                  FastDense(2, 50, tanh),
-                  FastDense(50, 2))
+dudt2 = SlowChain((x, p) -> x.^3,
+                  SlowDense(2, 50, tanh),
+                  SlowDense(50, 2))
 Random.seed!(100)
 p = initial_params(dudt2)
 

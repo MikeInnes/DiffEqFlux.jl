@@ -1,12 +1,12 @@
-abstract type FastLayer <: Function end
+abstract type SlowLayer <: Function end
 
 paramlength(f) = 0
 initial_params(f) = Float32[]
 initial_params(f::Chain) = Flux.destructure(f)[1]
 
-struct FastChain{T<:Tuple} <: FastLayer
+struct SlowChain{T<:Tuple} <: SlowLayer
   layers::T
-  function FastChain(xs...)
+  function SlowChain(xs...)
     layers = getfunc.(xs)
     new{typeof(layers)}(layers)
   end
@@ -18,35 +18,35 @@ getparams(x::Tuple) = last(x)
 
 applychain(::Tuple{}, x, p) = x
 applychain(fs::Tuple, x, p) = applychain(Base.tail(fs), first(fs)(x,p[1:paramlength(first(fs))]), p[(paramlength(first(fs))+1):end])
-(c::FastChain)(x,p) = applychain(c.layers, x, p)
-paramlength(c::FastChain) = sum(paramlength(x) for x in c.layers)
-initial_params(c::FastChain) = vcat(initial_params.(c.layers)...)
+(c::SlowChain)(x,p) = applychain(c.layers, x, p)
+paramlength(c::SlowChain) = sum(paramlength(x) for x in c.layers)
+initial_params(c::SlowChain) = vcat(initial_params.(c.layers)...)
 
 """
-FastDense(in,out,activation=identity;
+SlowDense(in,out,activation=identity;
           initW = Flux.glorot_uniform, initb = Flux.zeros)
 
 A Dense layer `activation.(W*x + b)` with input size `in` and output size `out`.
 The `activation` function defaults to `identity`, meaning the layer is an affine
 function. Initial parameters are taken to match `Flux.Dense`.
 
-Note that this function has specializations on `tanh` for a slightly faster
+Note that this function has specializations on `tanh` for a slightly Slower
 adjoint with Zygote.
 """
-struct FastDense{F,F2} <: FastLayer
+struct SlowDense{F,F2} <: SlowLayer
   out::Int
   in::Int
   σ::F
   initial_params::F2
-  function FastDense(in::Integer, out::Integer, σ = identity;
+  function SlowDense(in::Integer, out::Integer, σ = identity;
                  initW = Flux.glorot_uniform, initb = Flux.zeros)
     initial_params() = vcat(vec(initW(out, in)),initb(out))
     new{typeof(σ),typeof(initial_params)}(out,in,σ,initial_params)
   end
 end
-# (f::FastDense)(x,p) = f.σ.(reshape(uview(p,1:(f.out*f.in)),f.out,f.in)*x .+ uview(p,(f.out*f.in+1):lastindex(p)))
-(f::FastDense)(x,p) = f.σ.(reshape(p[1:(f.out*f.in)],f.out,f.in)*x .+ p[(f.out*f.in+1):end])
-ZygoteRules.@adjoint function (f::FastDense)(x,p)
+# (f::SlowDense)(x,p) = f.σ.(reshape(uview(p,1:(f.out*f.in)),f.out,f.in)*x .+ uview(p,(f.out*f.in+1):lastindex(p)))
+(f::SlowDense)(x,p) = f.σ.(reshape(p[1:(f.out*f.in)],f.out,f.in)*x .+ p[(f.out*f.in+1):end])
+ZygoteRules.@adjoint function (f::SlowDense)(x,p)
   @static if VERSION >= v"1.5"
     W = @view p[reshape(1:(f.out*f.in),f.out,f.in)]
   else
@@ -74,7 +74,7 @@ ZygoteRules.@adjoint function (f::FastDense)(x,p)
     ifgpufree(r)
   end
 
-  function FastDense_adjoint(ȳ)
+  function SlowDense_adjoint(ȳ)
     if typeof(f.σ) <: typeof(tanh)
       zbar = ȳ .* (1 .- y.^2)
     elseif typeof(f.σ) <: typeof(identity)
@@ -94,10 +94,10 @@ ZygoteRules.@adjoint function (f::FastDense)(x,p)
     ifgpufree(Wbar); ifgpufree(bbar); ifgpufree(ȳ)
     nothing,xbar,pbar
   end
-  y,FastDense_adjoint
+  y,SlowDense_adjoint
 end
-paramlength(f::FastDense) = f.out*(f.in + 1)
-initial_params(f::FastDense) = f.initial_params()
+paramlength(f::SlowDense) = f.out*(f.in + 1)
+initial_params(f::SlowDense) = f.initial_params()
 
 """
 StaticDense(in,out,activation=identity;
@@ -110,10 +110,10 @@ calculations are done with `StaticArrays` for extra speed for small linear
 algebra operations. Should only be used for input/output sizes of approximately
 16 or less.
 
-Note that this function has specializations on `tanh` for a slightly faster
+Note that this function has specializations on `tanh` for a slightly Slower
 adjoint with Zygote.
 """
-struct StaticDense{out,in,F,F2} <: FastLayer
+struct StaticDense{out,in,F,F2} <: SlowLayer
   σ::F
   initial_params::F2
   function StaticDense(in::Integer, out::Integer, σ = identity;

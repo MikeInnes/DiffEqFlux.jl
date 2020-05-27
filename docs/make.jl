@@ -32,7 +32,7 @@ makedocs(
         ],
         "Neural Differential Equation Layers" => "NeuralDELayers.md",
         "Use with Flux Chain and train!" => "Flux.md",
-        "FastChain" => "FastChain.md",
+        "SlowChain" => "SlowChain.md",
         "GPUs" => "GPUs.md",
         "sciml_train" => "Scimltrain.md",
         "Benchmark" => "Benchmark.md"

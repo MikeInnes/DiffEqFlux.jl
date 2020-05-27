@@ -18,8 +18,8 @@ loss_function(θ, x, y) = Flux.mse(y, nODE(x, θ))
 res = DiffEqFlux.sciml_train(loss_function, nODE.p, LBFGS(), training_data)
 res = DiffEqFlux.sciml_train(loss_function, nODE.p, NewtonTrustRegion(), training_data)
 
-NN = FastChain(FastDense(n, 10n, tanh),
-               FastDense(10n, n))
+NN = SlowChain(SlowDense(n, 10n, tanh),
+               SlowDense(10n, n))
 
 @info "ROCK2"
 nODE = NeuralODE(NN, tspan, ROCK2(), reltol=1e-4, saveat=[tspan[end]])

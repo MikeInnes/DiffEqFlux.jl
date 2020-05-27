@@ -7,7 +7,7 @@ const is_TRAVIS = haskey(ENV,"TRAVIS")
 @time begin
 if GROUP == "All" || GROUP == "DiffEqFlux" || GROUP == "Layers"
     @safetestset "Layers Tests" begin include("layers.jl") end
-    @safetestset "Fast Layers" begin include("fast_layers.jl") end
+    @safetestset "Slow Layers" begin include("Slow_layers.jl") end
     @safetestset "Layers SciML Tests" begin include("layers_sciml.jl") end
     @safetestset "Layers SDE" begin include("layers_sde.jl") end
     @safetestset "Layers DDE" begin include("layers_dde.jl") end
@@ -21,7 +21,7 @@ if GROUP == "All" || GROUP == "DiffEqFlux" || GROUP == "NeuralDE"
     @safetestset "Newton Neural ODE Tests" begin include("newton_neural_ode.jl") end
     @safetestset "Neural ODE MM Tests" begin include("neural_ode_mm.jl") end
     @safetestset "Neural Second Order ODE Tests" begin include("second_order_ode.jl") end
-    @safetestset "Fast Neural ODE Tests" begin include("fast_neural_ode.jl") end
+    @safetestset "Slow Neural ODE Tests" begin include("Slow_neural_ode.jl") end
     @safetestset "Partial Neural Tests" begin include("partial_neural.jl") end
 end
 end

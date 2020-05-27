@@ -16,9 +16,9 @@ u0 = 1.1f0
 tspan = (0.0f0, 25.0f0)
 tsteps = 0.0f0:1.0:25.0f0
 
-model_univ = FastChain(FastDense(2, 16, tanh),
-                       FastDense(16, 16, tanh),
-                       FastDense(16, 1))
+model_univ = SlowChain(SlowDense(2, 16, tanh),
+                       SlowDense(16, 16, tanh),
+                       SlowDense(16, 1))
 
 # The model weights are destructured into a vector of parameters
 p_model = initial_params(model_univ)

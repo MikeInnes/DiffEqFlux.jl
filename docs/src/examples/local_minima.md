@@ -28,9 +28,9 @@ end
 prob_trueode = ODEProblem(trueODEfunc, u0, tspan)
 ode_data = Array(solve(prob_trueode, Tsit5(), saveat = tsteps))
 
-dudt2 = FastChain((x, p) -> x.^3,
-                  FastDense(2, 16, tanh),
-                  FastDense(16, 2))
+dudt2 = SlowChain((x, p) -> x.^3,
+                  SlowDense(2, 16, tanh),
+                  SlowDense(16, 2))
 prob_neuralode = NeuralODE(dudt2, tspan, Vern7(), saveat = tsteps, abstol=1e-6, reltol=1e-6)
 
 function predict_neuralode(p)

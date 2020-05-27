@@ -66,7 +66,7 @@ Thus what DiffEqFlux.jl provides is:
 - A bunch of tutorials, documentation, and test cases for this combination
   with neural network libraries and GPUs.
 - Pre-built layer functions for common use cases like neural ODEs
-- Specailized layer functions (`FastDense`) to improve neural differential equation
+- Specailized layer functions (`SlowDense`) to improve neural differential equation
   training performance.
 - A specialized optimization function `sciml_train` with a training loop that
   allows non-machine learning libraries to be easily utilized.

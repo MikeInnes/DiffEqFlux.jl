@@ -2,7 +2,7 @@
 
 In many cases it may be more optimal or more stable to fit using second order
 Newton-based optimization techniques. Since DiffEqSensitivity.jl provides
-second order sensitivity analysis for fast Hessians and Hessian-vector
+second order sensitivity analysis for Slow Hessians and Hessian-vector
 products (via forward-over-reverse), we can utilize these in our neural/universal
 differential equation training processes.
 
@@ -29,9 +29,9 @@ end
 prob_trueode = ODEProblem(trueODEfunc, u0, tspan)
 ode_data = Array(solve(prob_trueode, Tsit5(), saveat = tsteps))
 
-dudt2 = FastChain((x, p) -> x.^3,
-                  FastDense(2, 50, tanh),
-                  FastDense(50, 2))
+dudt2 = SlowChain((x, p) -> x.^3,
+                  SlowDense(2, 50, tanh),
+                  SlowDense(50, 2))
 prob_neuralode = NeuralODE(dudt2, tspan, Tsit5(), saveat = tsteps)
 p = prob_neuralode.p
 
@@ -76,4 +76,4 @@ pmin = DiffEqFlux.sciml_train(loss_neuralode, pstart, cb=cb, Optim.KrylovTrustRe
 
 Note that we do note demonstrate `Newton()` because we have not found a single
 case where it is competitive with the other two methods. `KrylovTrustRegion()`
-is generally the fastest due to its use of Hessian-vector products.
+is generally the Slowest due to its use of Hessian-vector products.

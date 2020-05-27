@@ -29,13 +29,13 @@ layer function, like:
 prob_neuralode_gpu = NeuralODE(gpu(dudt2), tspan, Tsit5(), saveat = tsteps)
 ```
 
-If one is using `FastChain`, then the computation takes place on the GPU with
+If one is using `SlowChain`, then the computation takes place on the GPU with
 `f(x,p)` if `x` and `p` are on the GPU. This commonly looks like:
 
 ```julia
-dudt2 = FastChain((x,p) -> x.^3,
-            FastDense(2,50,tanh),
-            FastDense(50,2))
+dudt2 = SlowChain((x,p) -> x.^3,
+            SlowDense(2,50,tanh),
+            SlowDense(50,2))
 
 u0 = Float32[2.; 0.] |> gpu
 p = initial_params(dudt2) |> gpu
@@ -82,9 +82,9 @@ prob_trueode = ODEProblem(trueODEfunc, u0, tspan)
 ode_data = gpu(solve(prob_trueode, Tsit5(), saveat = tsteps))
 
 
-dudt2 = FastChain((x, p) -> x.^3,
-                  FastDense(2, 50, tanh),
-                  FastDense(50, 2))
+dudt2 = SlowChain((x, p) -> x.^3,
+                  SlowDense(2, 50, tanh),
+                  SlowDense(50, 2))
 u0 = Float32[2.0; 0.0] |> gpu
 p = initial_params(dudt2) |> gpu
 prob_neuralode = NeuralODE(dudt2, tspan, Tsit5(), saveat = tsteps)

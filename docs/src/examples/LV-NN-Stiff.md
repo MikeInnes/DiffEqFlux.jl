@@ -33,8 +33,8 @@ stiff_func = ODEFunction(f!, mass_matrix = M)
 prob_stiff = ODEProblem(stiff_func, u₀, tspan, p)
 sol_stiff = solve(prob_stiff, Rodas5(), saveat = 0.1)
 
-nn_dudt2 = FastChain(FastDense(3, 64, tanh),
-                     FastDense(64, 2))
+nn_dudt2 = SlowChain(SlowDense(3, 64, tanh),
+                     SlowDense(64, 2))
 
 model_stiff_ndae = NeuralODEMM(nn_dudt2, (u, p, t) -> [u[1] + u[2] + u[3] - 1],
                                tspan, M, Rodas5(autodiff = false), saveat = 0.1)
